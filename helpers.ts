@@ -78,5 +78,8 @@ export async function getMovie(context: coda.ExecutionContext, query: string) {
     Director: detailResult.directors,
     Writer: detailResult.writers,
     Starring: detailResult.stars,
+    Genres: detailResult.genres,
+    Countries: detailResult.countries,
+    Companies: detailResult.companies,
   };
 }
