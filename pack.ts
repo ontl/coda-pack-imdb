@@ -2,16 +2,20 @@ import * as coda from "@codahq/packs-sdk";
 import * as helpers from "./helpers";
 import * as schemas from "./schemas";
 
-export const pack = coda.newPack({ version: "0.1.0" });
+export const pack = coda.newPack({ version: "1.0" });
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-pack.addNetworkDomain("rapidapi.com");
+// We're using https://imdb-api.com, which has a weird structure in which the api key
+// must be inserted into the URL path. To do this, we use custom authentication:
+//
+
+pack.addNetworkDomain("imdb-api.com");
 pack.setUserAuthentication({
-  type: coda.AuthenticationType.CustomHeaderToken,
-  headerName: "x-rapidapi-key",
+  type: coda.AuthenticationType.Custom,
+  params: [{ name: "apiKey", description: "API Key from imdb-api.com" }],
   instructionsUrl: "https://coda.io/@nickhe/imdb-pack",
 });
 

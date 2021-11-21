@@ -7,19 +7,28 @@ import * as coda from "@codahq/packs-sdk";
 export const MovieSchema = coda.makeObjectSchema({
   type: coda.ValueType.Object,
   properties: {
+    IMDBId: { type: coda.ValueType.String },
     Title: { type: coda.ValueType.String },
+    Description: { type: coda.ValueType.String },
     Year: { type: coda.ValueType.Number },
     Runtime: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Duration,
-      // fromKey: "runningTimeInMinutes",
     },
     Poster: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
-      // fromKey: "image.url",
     },
-    IMDBId: { type: coda.ValueType.String },
+    Rating: { type: coda.ValueType.Number },
+    Metacritic: { type: coda.ValueType.Number },
+    RottenTomatoes: { type: coda.ValueType.Number },
+    Link: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+    },
+    Director: { type: coda.ValueType.String },
+    Writer: { type: coda.ValueType.String },
+    Starring: { type: coda.ValueType.String },
   },
   primary: "Title",
   featured: ["Title", "Year", "Poster"],
