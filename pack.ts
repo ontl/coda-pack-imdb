@@ -2,21 +2,26 @@ import * as coda from "@codahq/packs-sdk";
 import * as helpers from "./helpers";
 import * as schemas from "./schemas";
 
-export const pack = coda.newPack({ version: "1.1" });
+export const pack = coda.newPack();
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-// We're using https://imdb-api.com, which has a weird structure in which the api key
-// must be inserted into the URL path. To do this, we use custom authentication:
-//
+// Normally we could set up an easier authentication type (e.g. HeaderBearerToken),
+// but we're using two different endpoints with their own authentication. The best
+// way to handle this is to use the custom authentication type, which lets you
+// gather credentials from the user (or in this case the server) and then insert
+// them into requests wherever is appropriate.
 
 pack.addNetworkDomain("imdb-api.com");
-pack.setUserAuthentication({
+pack.addNetworkDomain("themoviedb.org");
+pack.setSystemAuthentication({
   type: coda.AuthenticationType.Custom,
-  params: [{ name: "apiKey", description: "API Key from imdb-api.com" }],
-  instructionsUrl: "https://coda.io/@nickhe/imdb-pack",
+  params: [
+    { name: "imdbApiKey", description: "API Key from imdb-api.com" },
+    { name: "tmdbApiKey", description: "API Key from themoviedb.org" },
+  ],
 });
 
 /* -------------------------------------------------------------------------- */
@@ -24,10 +29,9 @@ pack.setUserAuthentication({
 /* -------------------------------------------------------------------------- */
 
 pack.addColumnFormat({
-  name: "IMDB Movie",
+  name: "Movie",
   instructions: "Shows movie details from IMDB",
-  formulaName: "IMDBMovie",
-  formulaNamespace: "Deprecated",
+  formulaName: "Movie",
 });
 
 /* -------------------------------------------------------------------------- */
@@ -35,20 +39,26 @@ pack.addColumnFormat({
 /* -------------------------------------------------------------------------- */
 
 pack.addFormula({
-  name: "IMDBMovie",
-  description: "Search for a movie title and get details about it from IMDB",
+  name: "Movie",
+  description: "Search for a movie title to retrieve all its details",
   parameters: [
     coda.makeParameter({
       type: coda.ParameterType.String,
-      name: "query",
-      description: "Search IMDB (try movie name, or movie name and year)",
+      name: "title",
+      description: "Search IMDB (try movie title, or movie title and year)",
+    }),
+    coda.makeParameter({
+      type: coda.ParameterType.String,
+      name: "streamingCountry",
+      description:
+        "2-letter code for your country, to show which of your streaming providers have this movie (e.g. 'US', 'CA', 'UK')",
+      optional: true,
+      // TODO: Autocomplete with a list of countries, perhaps showing their names
     }),
   ],
-
   resultType: coda.ValueType.Object,
   schema: schemas.MovieSchema,
-
-  execute: async function ([query], context) {
-    return helpers.getMovie(context, query);
+  execute: async function ([title, country], context) {
+    return helpers.getMovie(context, title, country);
   },
 });

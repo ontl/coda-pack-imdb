@@ -7,7 +7,7 @@ import * as coda from "@codahq/packs-sdk";
 export const MovieSchema = coda.makeObjectSchema({
   type: coda.ValueType.Object,
   properties: {
-    IMDBId: { type: coda.ValueType.String },
+    ImdbId: { type: coda.ValueType.String },
     Title: { type: coda.ValueType.String },
     Description: { type: coda.ValueType.String },
     Year: { type: coda.ValueType.Number },
@@ -17,24 +17,62 @@ export const MovieSchema = coda.makeObjectSchema({
     },
     Poster: {
       type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      codaType: coda.ValueHintType.ImageAttachment,
+    },
+    VerticalPoster: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.ImageAttachment,
     },
     Rating: { type: coda.ValueType.Number },
     Metacritic: { type: coda.ValueType.Number },
     RottenTomatoes: { type: coda.ValueType.Number },
-    Link: {
+    ImdbLink: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Url,
     },
-    Director: { type: coda.ValueType.String },
-    Writer: { type: coda.ValueType.String },
-    Starring: { type: coda.ValueType.String },
-    Genres: { type: coda.ValueType.String },
-    Countries: { type: coda.ValueType.String },
-    Companies: { type: coda.ValueType.String },
+    WatchLinks: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+    },
+    Stream: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+    },
+    Buy: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+    },
+    Rent: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+    },
+    Director: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
+    Writer: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
+    Starring: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
+    Genres: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
+    Countries: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
+    Companies: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+    },
   },
   primary: "Title",
   featured: ["Title", "Year", "Poster"],
-  id: "IMDBId",
-  // identity: {name: "IMDBMovie"}
+  id: "ImdbId",
+  identity: { name: "Movie" },
 });
