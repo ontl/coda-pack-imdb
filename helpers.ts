@@ -34,7 +34,6 @@ async function imdbApiFetch(
     context.invocationToken +
     "}}/" +
     encodeURIComponent(query);
-  console.log("IMDB URL: " + url);
   // Add options to it, if any
   if (options.length) {
     url += "/";
@@ -65,7 +64,6 @@ async function tmdbApiFetch(
     api_key: "{{tmdbApiKey-" + context.invocationToken + "}}",
   };
   url = coda.withQueryParams(url, params);
-  console.log("TMDB URL: " + url);
   const response = await context.fetcher.fetch({
     method: "GET",
     url,
@@ -83,6 +81,8 @@ export async function getMovie(
   query: string,
   countryCode: string = "US"
 ) {
+  // We start with a name search, to try to nail down an imdb ID that we can use to
+  // fetch all our other data.
   const nameSearchResponse = await imdbApiFetch(
     context,
     "SearchMovie",
@@ -90,7 +90,9 @@ export async function getMovie(
     []
   );
   // We're always going to grab the top search result
-  const nameSearchResult = nameSearchResponse.body.results[0];
+  const nameSearchResult = nameSearchResponse?.body?.results[0];
+  if (!nameSearchResult)
+    throw new coda.UserVisibleError("Couldn't find a movie with that title");
   console.log("nameSearchResult: " + JSON.stringify(nameSearchResult, null, 2));
   // Now gather more details by hitting the IMDB API again, as well as the TMDB API
   const [imdbDetailResponse, tmdbDetailResponse] = await Promise.all([
@@ -111,39 +113,56 @@ export async function getMovie(
   console.log("tmdbDetails: " + JSON.stringify(tmdbDetails, null, 2));
 
   // Get straeaming providers
-  const streamingResult = await tmdbApiFetch(
-    context,
-    "movie",
-    tmdbDetails.id,
-    "watch/providers"
-  );
-  const streamingProviders = streamingResult?.body?.results[countryCode];
+  let watchProviders: { [key: string]: any } = {};
+  if (tmdbDetails) {
+    const streamingResult = await tmdbApiFetch(
+      context,
+      "movie",
+      tmdbDetails?.id,
+      "watch/providers"
+    );
+    // We're just interested in the local providers
+    watchProviders = streamingResult?.body?.results[countryCode];
+  }
 
   return {
     // IMDB-derived fields
-    ImdbId: nameSearchResult.id,
-    Title: nameSearchResult.title,
-    Description: nameSearchResult.description,
-    VerticalPoster: nameSearchResult.image,
-    ImdbLink: "https://imdb.com/title/" + nameSearchResult.id,
-    Rating: imdbDetails.imDbRating,
-    Metacritic: imdbDetails.metacriticRating,
-    RottenTomatoes: imdbDetails.ratings.rottenTomatoes,
-    Year: imdbDetails.year,
-    Runtime: imdbDetails.runtimeMins + "minutes",
-    Director: imdbDetails.directors.split(", "),
-    Writer: imdbDetails.writers.split(", "),
-    Starring: imdbDetails.stars.split(", "),
-    Genres: imdbDetails.genres.split(", "),
-    Countries: imdbDetails.countries.split(", "),
-    Companies: imdbDetails.companies.split(", "),
+    ImdbId: nameSearchResult?.id,
+    Description: nameSearchResult?.description,
+    Title: nameSearchResult?.title,
+    Year: imdbDetails?.year,
+    Director: imdbDetails?.directors.split(", "),
+    Runtime: imdbDetails?.runtimeMins + " minutes",
+    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
+    VerticalPoster: nameSearchResult?.image,
+    ImdbRating: imdbDetails?.imDbRating,
+    Metacritic: imdbDetails?.metacriticRating,
+    RottenTomatoes: imdbDetails?.ratings?.rottenTomatoes,
+    Writer: imdbDetails?.writers.split(", "),
+    Starring: imdbDetails?.stars.split(", "),
+    Genres: imdbDetails?.genres.split(", "),
+    Countries: imdbDetails?.countries.split(", "),
+    Companies: imdbDetails?.companies.split(", "),
     // TMDB-derived fields
-    Poster: TMDB_IMAGE_BASE_URL + tmdbDetails.backdrop_path,
-    WatchLinks: streamingProviders?.link,
-    Stream: streamingProviders?.flatrate.map(
-      (provider) => provider.provider_name
-    ),
-    Buy: streamingProviders?.buy.map((provider) => provider.provider_name),
-    Rent: streamingProviders?.rent.map((provider) => provider.provider_name),
+    HorizontalPoster: TMDB_IMAGE_BASE_URL + tmdbDetails?.backdrop_path,
+    WatchLinks: watchProviders?.link,
+    Stream: watchProviders?.flatrate
+      ? watchProviders.flatrate.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
+    Buy: watchProviders?.buy
+      ? watchProviders.buy.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
+    Rent: watchProviders?.rent
+      ? watchProviders.rent.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
   };
 }
