@@ -24,7 +24,7 @@ export async function imdbApiFetch(
   context: coda.ExecutionContext,
   endpoint: string,
   query: string,
-  options: string[]
+  options?: string[]
 ) {
   // Build the URL
   let url =
@@ -35,7 +35,7 @@ export async function imdbApiFetch(
     "}}/" +
     encodeURIComponent(query);
   // Add options to it, if any
-  if (options.length) {
+  if (options?.length) {
     url += "/";
     options.forEach((option) => {
       url += option + ",";
@@ -48,9 +48,18 @@ export async function imdbApiFetch(
   return response;
 }
 
+/**
+ * Fetches data from the TMDb API
+ * @param context
+ * @param endpoint Main endpoint
+ * @param id TMDB ID of the movie, series, etc.
+ * @param subEndpoint Additional URL path after ID (e.g. "watch/providers")
+ * @param params URL parameters (e.g. language, external_source for searching IMDB IDs)
+ * @returns Promise resolving to the response
+ */
 export async function tmdbApiFetch(
   context: coda.ExecutionContext,
-  endpoint: string, // comes before the id in the URL
+  endpoint: "movie" | "tv" | "find" | "watch/providers/regions", // comes before the id in the URL
   id?: string,
   subEndpoint?: string, // comes after the movie in the URL
   params?: { [key: string]: string }
@@ -72,6 +81,99 @@ export async function tmdbApiFetch(
   return response;
 }
 
+/**
+ * Convenience function to get initial data from TMDB based on IMDb ID
+ */
+export async function searchTmbdByImdbId(
+  context: coda.ExecutionContext,
+  imdbId: string
+) {
+  return tmdbApiFetch(
+    context,
+    "find",
+    imdbId,
+    null, // no sub-endpoint
+    { external_source: "imdb_id" }
+  );
+}
+
+/**
+ * Build Coda-schema-ready object for streaming providers for a given TMDB ID
+ */
+async function getWatchProviders(
+  context: coda.ExecutionContext,
+  tmdbId: string,
+  mediaType: "movie" | "tv",
+  countryCode: string
+) {
+  const streamingResult = await tmdbApiFetch(
+    context,
+    mediaType,
+    tmdbId,
+    "watch/providers"
+  );
+  // We're just interested in the local providers
+  const localProviders = streamingResult?.body?.results[countryCode];
+  if (!localProviders) return null;
+  return {
+    stream: localProviders.flatrate
+      ? localProviders.flatrate.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
+    buy: localProviders.buy
+      ? localProviders.buy.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
+    rent: localProviders.rent
+      ? localProviders.rent.map((provider) => ({
+          name: provider.provider_name,
+          country: countryCode,
+        }))
+      : [],
+    link: localProviders.link,
+  };
+}
+
+/**
+ * Build Coda-schema-ready object for an array of people (actors, directors, etc.)
+ * @param people Array of person objects from IMDb response
+ * @param imageSource Special circumstance where a long list of actors includes images; we
+ * don't usually want the full actor list, but want to query it to pull images for the main stars
+ */
+export function buildPeopleRecord(
+  people: { id: string; name: string }[],
+  imageSource?: {
+    id: string;
+    image: string;
+    name: string;
+    asCharacter: string;
+  }[]
+): { Name: string; ImdbLink: string; ImdbId: string; Photo?: string }[] {
+  console.log("People:", JSON.stringify(people));
+  // return null if there are no people
+  if (!people || !people.length || !Array.isArray(people)) return null;
+  // otherwise, process into People object
+  return people.map((person) => {
+    // grab the photo from the imageSource array if it exists
+    let photo = null;
+    if (imageSource && Array.isArray(imageSource) && imageSource.length) {
+      photo = imageSource.find(
+        (sourceRecord) => sourceRecord.id === person.id
+      )?.image;
+    }
+    return {
+      Name: person.name,
+      ImdbLink: `https://imdb.com/name/${person.id}/`,
+      ImdbId: person.id,
+      Photo: photo,
+    };
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /*                       Execute Functions for Formulas                       */
 /* -------------------------------------------------------------------------- */
@@ -83,28 +185,17 @@ export async function getMovie(
 ) {
   // We start with a name search, to try to nail down an imdb ID that we can use to
   // fetch all our other data.
-  const nameSearchResponse = await imdbApiFetch(
-    context,
-    "SearchMovie",
-    query,
-    []
-  );
+  const nameSearchResponse = await imdbApiFetch(context, "SearchMovie", query);
   // We're always going to grab the top search result
   const nameSearchResult = nameSearchResponse?.body?.results[0];
   if (!nameSearchResult)
     throw new coda.UserVisibleError("Couldn't find a movie with that title");
-  console.log("nameSearchResult: " + JSON.stringify(nameSearchResult, null, 2));
+
   // Now gather more details by hitting the IMDB API again, as well as the TMDB API
   const [imdbDetailResponse, tmdbDetailResponse] = await Promise.all([
-    // Include Ratins with the detail request
-    imdbApiFetch(context, "Title", nameSearchResult.id, ["Ratings"]),
-    tmdbApiFetch(
-      context,
-      "find",
-      nameSearchResult.id,
-      null, // no sub-endpoint
-      { external_source: "imdb_id" }
-    ),
+    // Include Ratings with the detail request
+    imdbApiFetch(context, "Title", nameSearchResult.id, ["Ratings,Trailer"]),
+    searchTmbdByImdbId(context, nameSearchResult.id),
   ]);
 
   const imdbDetails = imdbDetailResponse.body;
@@ -113,57 +204,153 @@ export async function getMovie(
   console.log("tmdbDetails: " + JSON.stringify(tmdbDetails, null, 2));
 
   // Get straeaming providers
-  let watchProviders: { [key: string]: any } = {};
+  let watchProviders: { [key: string]: any } = {}; // TODO: type this
   if (tmdbDetails) {
-    const streamingResult = await tmdbApiFetch(
+    watchProviders = await getWatchProviders(
       context,
-      "movie",
       tmdbDetails?.id,
-      "watch/providers"
+      "movie",
+      countryCode
     );
-    // We're just interested in the local providers
-    watchProviders = streamingResult?.body?.results[countryCode];
   }
 
+  const nonDigitCharacterPattern = /\D/g; // for converting box office data to numbers
+
   return {
-    // IMDB-derived fields
+    // IMDB-derived fields (initial API response)
     ImdbId: nameSearchResult?.id,
     Description: nameSearchResult?.description,
     Title: nameSearchResult?.title,
-    Year: imdbDetails?.year,
-    Director: imdbDetails?.directors.split(", "),
-    Runtime: imdbDetails?.runtimeMins + " minutes",
-    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
     VerticalPoster: nameSearchResult?.image,
+    // IMDB-derived fields (detail API response)
+    Year: imdbDetails?.year,
+    Runtime: imdbDetails?.runtimeMins + " minutes",
+    Director: buildPeopleRecord(imdbDetails?.directorList),
+    Plot: imdbDetails?.plot,
+    TrailerLink: imdbDetails?.trailer?.link,
+    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
     ImdbRating: imdbDetails?.imDbRating,
     Metacritic: imdbDetails?.metacriticRating,
     RottenTomatoes: imdbDetails?.ratings?.rottenTomatoes,
-    Writer: imdbDetails?.writers.split(", "),
-    Starring: imdbDetails?.stars.split(", "),
-    Genres: imdbDetails?.genres.split(", "),
-    Countries: imdbDetails?.countries.split(", "),
-    Companies: imdbDetails?.companies.split(", "),
+    Writer: buildPeopleRecord(imdbDetails?.writerList),
+    Starring: buildPeopleRecord(imdbDetails?.starList, imdbDetails?.actorList),
+    Genres: imdbDetails?.genres ? imdbDetails.genres.split(", ") : [],
+    Countries: imdbDetails?.countries ? imdbDetails.countries.split(", ") : [],
+    Companies: imdbDetails?.companies ? imdbDetails.companies.split(", ") : [],
+    BoxOffice: {
+      Budget: imdbDetails?.boxOffice?.budget?.replace(
+        nonDigitCharacterPattern,
+        ""
+      ) as number,
+      USAGross: imdbDetails?.boxOffice?.grossUSA?.replace(
+        nonDigitCharacterPattern,
+        ""
+      ) as number,
+      GlobalGross: imdbDetails?.boxOffice?.cumulativeWorldwideGross?.replace(
+        nonDigitCharacterPattern,
+        ""
+      ) as number,
+      USAOpeningWeekend: imdbDetails?.boxOffice?.openingWeekendUSA?.replace(
+        nonDigitCharacterPattern,
+        ""
+      ) as number,
+    },
     // TMDB-derived fields
     HorizontalPoster: TMDB_IMAGE_BASE_URL + tmdbDetails?.backdrop_path,
     WatchLinks: watchProviders?.link,
-    Stream: watchProviders?.flatrate
-      ? watchProviders.flatrate.map((provider) => ({
-          name: provider.provider_name,
-          country: countryCode,
-        }))
+    Stream: watchProviders?.stream,
+    Buy: watchProviders?.buy,
+    Rent: watchProviders?.rent,
+  };
+}
+
+export async function getSeries(
+  context: coda.ExecutionContext,
+  query: string,
+  countryCode: string = "US"
+) {
+  // We start with a name search, to try to nail down an imdb ID that we can use to
+  // fetch all our other data.
+  const nameSearchResponse = await imdbApiFetch(context, "SearchSeries", query);
+  // We're always going to grab the top search result
+  const nameSearchResult = nameSearchResponse?.body?.results[0];
+  if (!nameSearchResult)
+    throw new coda.UserVisibleError("Couldn't find a series with that title");
+
+  // Now gather more details by hitting the IMDB API again, and hit the TMDB API
+  // to get basic TMDB details including the TMDB id
+  const [imdbDetailResponse, tmdbSearchResponse] = await Promise.all([
+    // Include Ratings and Trailer with the detail request
+    imdbApiFetch(context, "Title", nameSearchResult.id, ["Ratings,Trailer"]),
+    searchTmbdByImdbId(context, nameSearchResult.id),
+  ]);
+
+  const imdbDetails = imdbDetailResponse.body;
+  const tmdbSearchDetails = tmdbSearchResponse.body.tv_results[0];
+  console.log("imdbDetails: " + JSON.stringify(imdbDetails, null, 2));
+  console.log(
+    "tmdbSearchDetails: " + JSON.stringify(tmdbSearchDetails, null, 2)
+  );
+
+  // Get streaming providers and additional TMDB details
+  let watchProviders: { [key: string]: any } = {}; // TODO: type this
+  let tmdbDetailResponse;
+  let seasons: { [key: string]: any }[] = [{}]; // TODO: type this
+  if (tmdbSearchDetails) {
+    [watchProviders, tmdbDetailResponse] = await Promise.all([
+      getWatchProviders(context, tmdbSearchDetails?.id, "tv", countryCode),
+      tmdbApiFetch(context, "tv", tmdbSearchDetails?.id),
+    ]);
+  }
+  const tmdbDetails = tmdbDetailResponse?.body;
+  if (tmdbDetails.seasons) {
+    seasons = tmdbDetails.seasons.map((season) => {
+      return {
+        SeasonNumber: season.season_number,
+        SeasonName: season.name,
+        EpisodeCount: season.episode_count,
+        AirDate: season.air_date,
+      };
+    });
+  }
+
+  return {
+    // IMDB-derived fields (initial API response)
+    ImdbId: nameSearchResult?.id,
+    Description: nameSearchResult?.description,
+    Title: nameSearchResult?.title,
+    VerticalPoster: nameSearchResult?.image,
+    // IMDB-derived fields (detail API response)
+    FullTitle: imdbDetails?.fullTitle,
+    Creators: buildPeopleRecord(imdbDetails?.tvSeriesInfo?.creatorList),
+    Years: {
+      StartYear: imdbDetails?.year,
+      EndYear: imdbDetails?.tvSeriesInfo?.yearEnd,
+      Years: `${imdbDetails?.year}-${imdbDetails?.tvSeriesInfo?.yearEnd}`,
+    },
+    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
+    ContentRating: imdbDetails?.contentRating,
+    ImdbRating: imdbDetails?.imDbRating,
+    Metacritic: imdbDetails?.metacriticRating,
+    RottenTomatoes: imdbDetails?.ratings?.rottenTomatoes,
+    Plot: imdbDetails?.plot,
+    Starring: buildPeopleRecord(imdbDetails?.starList, imdbDetails?.actorList),
+    Genres: imdbDetails?.genres ? imdbDetails.genres.split(", ") : [],
+    Countries: imdbDetails?.countries ? imdbDetails.countries.split(", ") : [],
+    Companies: imdbDetails?.companies ? imdbDetails.companies.split(", ") : [],
+    TrailerLink: imdbDetails?.trailer?.link,
+    // TMDB-derived fields
+    HorizontalPoster: TMDB_IMAGE_BASE_URL + tmdbSearchDetails?.backdrop_path,
+    WatchLinks: watchProviders?.link,
+    Stream: watchProviders?.stream,
+    Buy: watchProviders?.buy,
+    Rent: watchProviders?.rent,
+    Seasons: seasons,
+    Networks: tmdbDetails?.networks
+      ? tmdbDetails.networks.map((network) => network.name)
       : [],
-    Buy: watchProviders?.buy
-      ? watchProviders.buy.map((provider) => ({
-          name: provider.provider_name,
-          country: countryCode,
-        }))
-      : [],
-    Rent: watchProviders?.rent
-      ? watchProviders.rent.map((provider) => ({
-          name: provider.provider_name,
-          country: countryCode,
-        }))
-      : [],
+    NextEpisodeAirDate: tmdbDetails.next_episode_to_air?.air_date,
+    Status: tmdbDetails.status,
   };
 }
 
