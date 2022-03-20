@@ -20,7 +20,7 @@ const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w780/";
  * as the api key): https://imdb-api.com/en/API/SearchMovie/k_12345678/incendies
  */
 
-async function imdbApiFetch(
+export async function imdbApiFetch(
   context: coda.ExecutionContext,
   endpoint: string,
   query: string,
@@ -48,7 +48,7 @@ async function imdbApiFetch(
   return response;
 }
 
-async function tmdbApiFetch(
+export async function tmdbApiFetch(
   context: coda.ExecutionContext,
   endpoint: string, // comes before the id in the URL
   id?: string,
@@ -165,4 +165,24 @@ export async function getMovie(
         }))
       : [],
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                           Autocomplete Functions                           */
+/* -------------------------------------------------------------------------- */
+
+export async function autocompleteCountryCode(
+  context: coda.ExecutionContext,
+  search: string
+) {
+  let response = await tmdbApiFetch(context, "watch/providers/regions");
+  let results = response.body.results;
+  // Generate an array of autocomplete objects, using the native_name field as the
+  // label and its country code for the value.
+  return coda.autocompleteSearchObjects(
+    search,
+    results,
+    "native_name",
+    "iso_3166_1"
+  );
 }

@@ -53,7 +53,9 @@ pack.addFormula({
       description:
         "2-letter code for your country, to show which of your streaming providers have this movie (e.g. 'US', 'CA', 'UK')",
       optional: true,
-      // TODO: Autocomplete with a list of countries, perhaps showing their names
+      autocomplete: async function (context, search) {
+        return helpers.autocompleteCountryCode(context, search);
+      },
     }),
   ],
   resultType: coda.ValueType.Object,
