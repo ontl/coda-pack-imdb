@@ -186,10 +186,19 @@ export async function getMovie(
   // We start with a name search, to try to nail down an imdb ID that we can use to
   // fetch all our other data.
   const nameSearchResponse = await imdbApiFetch(context, "SearchMovie", query);
+  console.log("Name search response:", JSON.stringify(nameSearchResponse.body));
+  if (nameSearchResponse.body.errorMessage)
+    throw new coda.UserVisibleError(
+      "Error: ",
+      nameSearchResponse.body.errorMessage
+    );
+  if (
+    !nameSearchResponse.body.results ||
+    !nameSearchResponse.body.results.length
+  )
+    throw new coda.UserVisibleError("Couldn't find a movie with that title");
   // We're always going to grab the top search result
   const nameSearchResult = nameSearchResponse?.body?.results[0];
-  if (!nameSearchResult)
-    throw new coda.UserVisibleError("Couldn't find a movie with that title");
 
   // Now gather more details by hitting the IMDB API again, as well as the TMDB API
   const [imdbDetailResponse, tmdbDetailResponse] = await Promise.all([
@@ -232,6 +241,7 @@ export async function getMovie(
     ImdbRating: imdbDetails?.imDbRating,
     Metacritic: imdbDetails?.metacriticRating,
     RottenTomatoes: imdbDetails?.ratings?.rottenTomatoes,
+    ContentRating: imdbDetails?.contentRating,
     Writer: buildPeopleRecord(imdbDetails?.writerList),
     Starring: buildPeopleRecord(imdbDetails?.starList, imdbDetails?.actorList),
     Genres: imdbDetails?.genres ? imdbDetails.genres.split(", ") : [],
@@ -272,10 +282,18 @@ export async function getSeries(
   // We start with a name search, to try to nail down an imdb ID that we can use to
   // fetch all our other data.
   const nameSearchResponse = await imdbApiFetch(context, "SearchSeries", query);
+  if (nameSearchResponse.body.errorMessage)
+    throw new coda.UserVisibleError(
+      "Error: ",
+      nameSearchResponse.body.errorMessage
+    );
+  if (
+    !nameSearchResponse.body.results ||
+    !nameSearchResponse.body.results.length
+  )
+    throw new coda.UserVisibleError("Couldn't find a TV show with that title");
   // We're always going to grab the top search result
   const nameSearchResult = nameSearchResponse?.body?.results[0];
-  if (!nameSearchResult)
-    throw new coda.UserVisibleError("Couldn't find a series with that title");
 
   // Now gather more details by hitting the IMDB API again, and hit the TMDB API
   // to get basic TMDB details including the TMDB id

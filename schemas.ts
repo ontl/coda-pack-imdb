@@ -133,6 +133,7 @@ export const MovieSchema = coda.makeObjectSchema({
     ImdbRating: { type: coda.ValueType.Number },
     Metacritic: { type: coda.ValueType.Number },
     RottenTomatoes: { type: coda.ValueType.Number },
+    ContentRating: { type: coda.ValueType.String },
     VerticalPoster: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
