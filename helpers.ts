@@ -7,6 +7,7 @@ import * as coda from "@codahq/packs-sdk";
 const IMDB_BASE_URL = "https://imdb-api.com/en/API/";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w780/";
+const IMDB_TITLE_ID_REGEX = new RegExp("^ttd+$"); // tt followed by 1 or more digits
 
 /* -------------------------------------------------------------------------- */
 /*                              Helper Functions                              */
@@ -183,34 +184,49 @@ export async function getMovie(
   query: string,
   countryCode: string = "US"
 ) {
-  // We start with a name search, to try to nail down an imdb ID that we can use to
-  // fetch all our other data.
-  const nameSearchResponse = await imdbApiFetch(context, "SearchMovie", query);
-  console.log("Name search response:", JSON.stringify(nameSearchResponse.body));
-  if (nameSearchResponse.body.errorMessage)
-    throw new coda.UserVisibleError(
-      "Error: ",
-      nameSearchResponse.body.errorMessage
+  let imdbId: string;
+
+  // First, let's see if the user supplied an IMDb ID, or a regular search term
+  if (IMDB_TITLE_ID_REGEX.test(query)) {
+    imdbId = query;
+  } else {
+    // We start with a name search, to try to nail down an imdb ID that we can use to
+    // fetch all our other data.
+    const nameSearchResponse = await imdbApiFetch(
+      context,
+      "SearchMovie",
+      query
     );
-  if (
-    !nameSearchResponse.body.results ||
-    !nameSearchResponse.body.results.length
-  )
-    throw new coda.UserVisibleError("Couldn't find a movie with that title");
-  // We're always going to grab the top search result
-  const nameSearchResult = nameSearchResponse?.body?.results[0];
+    // console.log(
+    //   "Name search response:",
+    //   JSON.stringify(nameSearchResponse.body, null, 2)
+    // );
+    if (nameSearchResponse.body.errorMessage)
+      throw new coda.UserVisibleError(
+        "Error: ",
+        nameSearchResponse.body.errorMessage
+      );
+    if (
+      !nameSearchResponse.body.results ||
+      !nameSearchResponse.body.results.length
+    )
+      throw new coda.UserVisibleError("Couldn't find a movie with that title");
+    // We're always going to grab the top search result
+    const nameSearchResult = nameSearchResponse?.body?.results[0];
+    imdbId = nameSearchResult?.id;
+  }
 
   // Now gather more details by hitting the IMDB API again, as well as the TMDB API
   const [imdbDetailResponse, tmdbDetailResponse] = await Promise.all([
     // Include Ratings with the detail request
-    imdbApiFetch(context, "Title", nameSearchResult.id, ["Ratings,Trailer"]),
-    searchTmbdByImdbId(context, nameSearchResult.id),
+    imdbApiFetch(context, "Title", imdbId, ["Ratings,Trailer"]),
+    searchTmbdByImdbId(context, imdbId),
   ]);
 
   const imdbDetails = imdbDetailResponse.body;
   const tmdbDetails = tmdbDetailResponse.body.movie_results[0];
-  console.log("imdbDetails: " + JSON.stringify(imdbDetails, null, 2));
-  console.log("tmdbDetails: " + JSON.stringify(tmdbDetails, null, 2));
+  // console.log("imdbDetails: " + JSON.stringify(imdbDetails, null, 2));
+  // console.log("tmdbDetails: " + JSON.stringify(tmdbDetails, null, 2));
 
   // Get straeaming providers
   let watchProviders: { [key: string]: any } = {}; // TODO: type this
@@ -226,18 +242,17 @@ export async function getMovie(
   const nonDigitCharacterPattern = /\D/g; // for converting box office data to numbers
 
   return {
-    // IMDB-derived fields (initial API response)
-    ImdbId: nameSearchResult?.id,
-    Description: nameSearchResult?.description,
-    Title: nameSearchResult?.title,
-    VerticalPoster: nameSearchResult?.image,
     // IMDB-derived fields (detail API response)
+    ImdbId: imdbDetails?.id,
+    Description: imdbDetails?.description,
+    Title: imdbDetails?.title,
+    VerticalPoster: imdbDetails?.image,
     Year: imdbDetails?.year,
     Runtime: imdbDetails?.runtimeMins + " minutes",
     Director: buildPeopleRecord(imdbDetails?.directorList),
     Plot: imdbDetails?.plot,
     TrailerLink: imdbDetails?.trailer?.link,
-    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
+    ImdbLink: "https://imdb.com/title/" + imdbId,
     ImdbRating: imdbDetails?.imDbRating,
     Metacritic: imdbDetails?.metacriticRating,
     RottenTomatoes: imdbDetails?.ratings?.rottenTomatoes,
