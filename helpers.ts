@@ -294,28 +294,41 @@ export async function getSeries(
   query: string,
   countryCode: string = "US"
 ) {
-  // We start with a name search, to try to nail down an imdb ID that we can use to
-  // fetch all our other data.
-  const nameSearchResponse = await imdbApiFetch(context, "SearchSeries", query);
-  if (nameSearchResponse.body.errorMessage)
-    throw new coda.UserVisibleError(
-      "Error: ",
-      nameSearchResponse.body.errorMessage
+  let imdbId: string;
+  // First, let's see if the user supplied an IMDb ID, or a regular search term
+  if (IMDB_TITLE_ID_REGEX.test(query)) {
+    imdbId = query;
+  } else {
+    // We start with a name search, to try to nail down an imdb ID that we can use to
+    // fetch all our other data.
+    const nameSearchResponse = await imdbApiFetch(
+      context,
+      "SearchSeries",
+      query
     );
-  if (
-    !nameSearchResponse.body.results ||
-    !nameSearchResponse.body.results.length
-  )
-    throw new coda.UserVisibleError("Couldn't find a TV show with that title");
-  // We're always going to grab the top search result
-  const nameSearchResult = nameSearchResponse?.body?.results[0];
+    if (nameSearchResponse.body.errorMessage)
+      throw new coda.UserVisibleError(
+        "Error: ",
+        nameSearchResponse.body.errorMessage
+      );
+    if (
+      !nameSearchResponse.body.results ||
+      !nameSearchResponse.body.results.length
+    )
+      throw new coda.UserVisibleError(
+        "Couldn't find a TV show with that title"
+      );
+    // We're always going to grab the top search result
+    const nameSearchResult = nameSearchResponse?.body?.results[0];
+    imdbId = nameSearchResult?.id;
+  }
 
   // Now gather more details by hitting the IMDB API again, and hit the TMDB API
   // to get basic TMDB details including the TMDB id
   const [imdbDetailResponse, tmdbSearchResponse] = await Promise.all([
     // Include Ratings and Trailer with the detail request
-    imdbApiFetch(context, "Title", nameSearchResult.id, ["Ratings,Trailer"]),
-    searchTmbdByImdbId(context, nameSearchResult.id),
+    imdbApiFetch(context, "Title", imdbId, ["Ratings,Trailer"]),
+    searchTmbdByImdbId(context, imdbId),
   ]);
 
   const imdbDetails = imdbDetailResponse.body;
@@ -348,12 +361,11 @@ export async function getSeries(
   }
 
   return {
-    // IMDB-derived fields (initial API response)
-    ImdbId: nameSearchResult?.id,
-    Description: nameSearchResult?.description,
-    Title: nameSearchResult?.title,
-    VerticalPoster: nameSearchResult?.image,
     // IMDB-derived fields (detail API response)
+    ImdbId: imdbId,
+    Description: imdbDetails.description,
+    Title: imdbDetails.title,
+    VerticalPoster: imdbDetails.image,
     FullTitle: imdbDetails?.fullTitle,
     Creators: buildPeopleRecord(imdbDetails?.tvSeriesInfo?.creatorList),
     Years: {
@@ -361,7 +373,7 @@ export async function getSeries(
       EndYear: imdbDetails?.tvSeriesInfo?.yearEnd,
       Years: `${imdbDetails?.year}-${imdbDetails?.tvSeriesInfo?.yearEnd}`,
     },
-    ImdbLink: "https://imdb.com/title/" + nameSearchResult?.id,
+    ImdbLink: "https://imdb.com/title/" + imdbId,
     ContentRating: imdbDetails?.contentRating,
     ImdbRating: imdbDetails?.imDbRating,
     Metacritic: imdbDetails?.metacriticRating,
