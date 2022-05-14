@@ -8,6 +8,7 @@ const IMDB_BASE_URL = "https://imdb-api.com/en/API/";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w780/";
 const IMDB_TITLE_ID_REGEX = new RegExp("^ttd+$"); // tt followed by 1 or more digits
+const IMDB_PERSON_ID_REGEX = new RegExp("^nmd+$"); // nm followed by 1 or more digits
 
 /* -------------------------------------------------------------------------- */
 /*                              Helper Functions                              */
@@ -173,6 +174,20 @@ export function buildPeopleRecord(
       Photo: photo,
     };
   });
+}
+
+function age(birthDate: string, deathDate?: string) {
+  const birthDateObject = new Date(birthDate);
+  const endDateObject = deathDate ? new Date(deathDate) : new Date();
+  const age = endDateObject.getFullYear() - birthDateObject.getFullYear();
+  const m = endDateObject.getMonth() - birthDateObject.getMonth();
+  if (
+    m < 0 ||
+    (m === 0 && endDateObject.getDate() < birthDateObject.getDate())
+  ) {
+    return age - 1;
+  }
+  return age;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -396,6 +411,66 @@ export async function getSeries(
       : [],
     NextEpisodeAirDate: tmdbDetails.next_episode_to_air?.air_date,
     Status: tmdbDetails.status,
+  };
+}
+
+export async function getPerson(context: coda.ExecutionContext, query: string) {
+  let imdbId: string;
+
+  // First, let's see if the user supplied an IMDb ID, or a regular search term
+  if (IMDB_PERSON_ID_REGEX.test(query)) {
+    imdbId = query;
+    console.log("IMDB ID supplied");
+  } else {
+    // We start with a name search, to try to nail down an imdb ID that we can use to
+    // fetch all our other data.
+    const nameSearchResponse = await imdbApiFetch(context, "SearchName", query);
+    if (nameSearchResponse.body.errorMessage)
+      throw new coda.UserVisibleError(
+        "Error: ",
+        nameSearchResponse.body.errorMessage
+      );
+    if (
+      !nameSearchResponse.body.results ||
+      !nameSearchResponse.body.results.length
+    )
+      throw new coda.UserVisibleError("Couldn't find a person with that name");
+    // We're always going to grab the top search result
+    const nameSearchResult = nameSearchResponse?.body?.results[0];
+    imdbId = nameSearchResult?.id;
+  }
+
+  // Now gather more details by hitting the IMDB API again
+  const imdbDetailResponse = await imdbApiFetch(context, "Name", imdbId);
+  const imdbDetails = imdbDetailResponse.body;
+
+  let knownFor = [];
+  for (const item of imdbDetails?.knownFor) {
+    knownFor.push({
+      Summary: `${item.role}, ${item.fullTitle}`,
+      Title: item.title,
+      Role: item.role,
+      Year: item.year,
+      ImdbId: item.id,
+      ImdbLink: "https://imdb.com/title/" + item.id,
+      Poster: item.image,
+    });
+  }
+
+  return {
+    Name: imdbDetails?.name,
+    Description: knownFor[0]?.Summary,
+    Photo: imdbDetails?.image,
+    Roles: imdbDetails?.role?.split(", "),
+    KnownFor: knownFor,
+    Bio: imdbDetails?.summary,
+    BirthDate: imdbDetails?.birthDate,
+    DeathDate: imdbDetails?.deathDate,
+    Age: age(imdbDetails?.birthDate, imdbDetails?.deathDate),
+    Height: imdbDetails?.height,
+    Awards: imdbDetails?.awards,
+    ImdbLink: "https://imdb.com/name/" + imdbId,
+    ImdbId: imdbId,
   };
 }
 

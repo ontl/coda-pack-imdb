@@ -30,14 +30,23 @@ pack.setSystemAuthentication({
 
 pack.addColumnFormat({
   name: "Movie",
-  instructions: "Shows movie details from IMDB",
+  instructions:
+    "Shows movie details from IMDB (put title, title and year, or IMDB ID in column)",
   formulaName: "Movie",
 });
 
 pack.addColumnFormat({
   name: "Series",
-  instructions: "Shows TV series details from IMDB",
+  instructions:
+    "Shows TV series details from IMDB (put show name or IMDB ID in column)",
   formulaName: "Series",
+});
+
+pack.addColumnFormat({
+  name: "Person",
+  instructions:
+    "Shows person details from IMDB (put name or IMDB ID in column)",
+  formulaName: "Person",
 });
 
 /* -------------------------------------------------------------------------- */
@@ -95,5 +104,24 @@ pack.addFormula({
   schema: schemas.SeriesSchema,
   execute: async function ([title, country], context) {
     return helpers.getSeries(context, title, country);
+  },
+});
+
+pack.addFormula({
+  name: "Person",
+  description:
+    "Search for a person (actor, producer, foley artist) to retrieve all their details.",
+  parameters: [
+    coda.makeParameter({
+      type: coda.ParameterType.String,
+      name: "name",
+      description:
+        "Search IMDB (try person's name, or their IMDB ID beginning with 'nm')",
+    }),
+  ],
+  resultType: coda.ValueType.Object,
+  schema: schemas.PersonSchema,
+  execute: async function ([name], context) {
+    return helpers.getPerson(context, name);
   },
 });

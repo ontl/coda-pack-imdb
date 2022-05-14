@@ -3,3 +3,4 @@ node_modules
 .coda-pack.json
 .coda-credentials.json
 *.DS_Store
+.DS_Store
