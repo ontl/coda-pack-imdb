@@ -46,6 +46,7 @@ export async function imdbApiFetch(
   const response = await context.fetcher.fetch({
     method: "GET",
     url: url,
+    cacheTtlSecs: 60 * 60 * 24,
   });
   return response;
 }
@@ -78,6 +79,7 @@ export async function tmdbApiFetch(
   const response = await context.fetcher.fetch({
     method: "GET",
     url,
+    cacheTtlSecs: 60 * 60 * 24,
   });
   // console.log(JSON.stringify(response, null, 2));
   return response;
