@@ -96,7 +96,7 @@ export async function searchTmbdByImdbId(
     context,
     "find",
     imdbId,
-    null, // no sub-endpoint
+    undefined, // no sub-endpoint
     { external_source: "imdb_id" }
   );
 }
@@ -156,14 +156,21 @@ export function buildPeopleRecord(
     name: string;
     asCharacter: string;
   }[]
-): { Name: string; ImdbLink: string; ImdbId: string; Photo?: string }[] {
+):
+  | {
+      Name: string;
+      ImdbLink: string;
+      ImdbId: string;
+      Photo?: string | undefined;
+    }[]
+  | undefined {
   console.log("People:", JSON.stringify(people));
-  // return null if there are no people
-  if (!people || !people.length || !Array.isArray(people)) return null;
+  // return undefined if there are no people
+  if (!people || !people.length || !Array.isArray(people)) return undefined;
   // otherwise, process into People object
   return people.map((person) => {
     // grab the photo from the imageSource array if it exists
-    let photo = null;
+    let photo: string | undefined;
     if (imageSource && Array.isArray(imageSource) && imageSource.length) {
       photo = imageSource.find(
         (sourceRecord) => sourceRecord.id === person.id
@@ -246,7 +253,12 @@ export async function getMovie(
   // console.log("tmdbDetails: " + JSON.stringify(tmdbDetails, null, 2));
 
   // Get straeaming providers
-  let watchProviders: { [key: string]: any } = {}; // TODO: type this
+  let watchProviders: {
+    stream?: any;
+    buy?: any;
+    rent?: any;
+    link?: any;
+  } | null = {};
   if (tmdbDetails) {
     watchProviders = await getWatchProviders(
       context,
@@ -356,7 +368,7 @@ export async function getSeries(
   );
 
   // Get streaming providers and additional TMDB details
-  let watchProviders: { [key: string]: any } = {}; // TODO: type this
+  let watchProviders: { [key: string]: any } | null = {}; // TODO: type this
   let tmdbDetailResponse;
   let seasons: { [key: string]: any }[] = [{}]; // TODO: type this
   if (tmdbSearchDetails) {
@@ -446,7 +458,7 @@ export async function getPerson(context: coda.ExecutionContext, query: string) {
   const imdbDetailResponse = await imdbApiFetch(context, "Name", imdbId);
   const imdbDetails = imdbDetailResponse.body;
 
-  let knownFor = [];
+  let knownFor: [{ [key: string]: any }?] = [];
   for (const item of imdbDetails?.knownFor) {
     knownFor.push({
       Summary: `${item.role}, ${item.fullTitle}`,
