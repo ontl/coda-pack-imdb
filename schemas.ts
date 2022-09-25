@@ -334,10 +334,6 @@ export const PersonSchema = coda.makeObjectSchema({
           },
         },
       },
-      identity: {
-        name: "KnownFor",
-        attribution: attributionGeneric,
-      },
     },
     Bio: { type: coda.ValueType.String },
     BirthDate: {
