@@ -14,12 +14,12 @@ export const pack = coda.newPack();
 // gather credentials from the user (or in this case the server) and then insert
 // them into requests wherever is appropriate.
 
-pack.addNetworkDomain("imdb-api.com");
+pack.addNetworkDomain("tv-api.com");
 pack.addNetworkDomain("themoviedb.org");
 pack.setSystemAuthentication({
   type: coda.AuthenticationType.Custom,
   params: [
-    { name: "imdbApiKey", description: "API Key from imdb-api.com" },
+    { name: "imdbApiKey", description: "API Key from tv-api.com" },
     { name: "tmdbApiKey", description: "API Key from themoviedb.org" },
   ],
 });

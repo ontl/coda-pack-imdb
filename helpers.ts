@@ -4,7 +4,7 @@ import * as coda from "@codahq/packs-sdk";
 /*                                   Config                                   */
 /* -------------------------------------------------------------------------- */
 
-const IMDB_BASE_URL = "https://imdb-api.com/en/API/";
+const IMDB_BASE_URL = "https://tv-api.com/en/API/";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w780/";
 const IMDB_TITLE_ID_REGEX = new RegExp("^ttd+$"); // tt followed by 1 or more digits
@@ -17,9 +17,9 @@ const IMDB_PERSON_ID_REGEX = new RegExp("^nmd+$"); // nm followed by 1 or more d
 /**
  * Builds an API request URL using Coda's fancy templating syntax for custom auth
  * (https://coda.github.io/packs-sdk/reference/sdk/interfaces/CustomAuthentication/)
- * which is needed because the imdb-api.com API requires the API Key to be delivered
+ * which is needed because the tv-api.com API requires the API Key to be delivered
  * as part of the URL path (not a query string parameter). For example (with k_12345678
- * as the api key): https://imdb-api.com/en/API/SearchMovie/k_12345678/incendies
+ * as the api key): https://tv-api.com/en/API/SearchMovie/k_12345678/incendies
  */
 
 export async function imdbApiFetch(
