@@ -228,7 +228,7 @@ export async function getMovie(
     if (nameSearchResponse.body.errorMessage)
       throw new coda.UserVisibleError(
         "Error: ",
-        nameSearchResponse.body.errorMessage
+        JSON.stringify(nameSearchResponse.body.errorMessage, null, 2)
       );
     if (
       !nameSearchResponse.body.results ||
