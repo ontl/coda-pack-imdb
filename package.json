@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "test": "bash tests/run-tests.sh"
+  },
   "dependencies": {
     "@codahq/packs-sdk": "^1.7.4"
   },

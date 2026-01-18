@@ -141,7 +141,6 @@ export const MovieSchema = coda.makeObjectSchema({
     },
     ImdbRating: { type: coda.ValueType.Number },
     Metacritic: { type: coda.ValueType.Number },
-    RottenTomatoes: { type: coda.ValueType.Number },
     ContentRating: { type: coda.ValueType.String },
     VerticalPoster: {
       type: coda.ValueType.String,
@@ -247,7 +246,6 @@ export const SeriesSchema = coda.makeObjectSchema({
     ContentRating: { type: coda.ValueType.String },
     ImdbRating: { type: coda.ValueType.Number },
     Metacritic: { type: coda.ValueType.Number },
-    RottenTomatoes: { type: coda.ValueType.Number },
     VerticalPoster: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
@@ -346,7 +344,6 @@ export const PersonSchema = coda.makeObjectSchema({
     },
     Age: { type: coda.ValueType.Number },
     Height: { type: coda.ValueType.String },
-    Awards: { type: coda.ValueType.String },
     ImdbLink: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
     ImdbId: { type: coda.ValueType.String },
   },

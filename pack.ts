@@ -8,18 +8,14 @@ export const pack = coda.newPack();
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-// Normally we could set up an easier authentication type (e.g. HeaderBearerToken),
-// but we're using two different endpoints with their own authentication. The best
-// way to handle this is to use the custom authentication type, which lets you
-// gather credentials from the user (or in this case the server) and then insert
-// them into requests wherever is appropriate.
+// imdbapi.dev requires no authentication.
+// TMDB still requires an API key, so we use custom authentication to gather it.
 
-pack.addNetworkDomain("tv-api.com");
+pack.addNetworkDomain("imdbapi.dev");
 pack.addNetworkDomain("themoviedb.org");
 pack.setSystemAuthentication({
   type: coda.AuthenticationType.Custom,
   params: [
-    { name: "imdbApiKey", description: "API Key from tv-api.com" },
     { name: "tmdbApiKey", description: "API Key from themoviedb.org" },
   ],
 });

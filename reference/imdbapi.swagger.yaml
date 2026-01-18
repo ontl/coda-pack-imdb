@@ -1,0 +1,1966 @@
+swagger: "2.0"
+info:
+  title: IMDbAPI
+  description: IMDb API for accessing movie and TV show data
+  version: 2.7.12
+  contact:
+    name: Telegram Group
+    url: https://t.me/imdbapi
+tags:
+  - name: Title
+    description: Operations related to titles (movies, TV shows, etc.)
+  - name: Name
+    description: Operations related to names (actors, directors, etc.)
+  - name: Interest
+    description: Operations related to interests.
+host: api.imdbapi.dev
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /titles:
+    get:
+      summary: List titles
+      description: Retrieve a list of titles with optional filters.
+      operationId: IMDbAPIService_ListTitles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitlesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: types
+          description: |-
+            Optional. The type of titles to filter by.
+            If not specified, all types are returned.
+
+             - MOVIE: Represents a movie title.
+             - TV_SERIES: Represents a TV series title.
+             - TV_MINI_SERIES: Represents a TV mini-series title.
+             - TV_SPECIAL: Represents a TV special title.
+             - TV_MOVIE: Represents a TV movie title.
+             - SHORT: Represents a short title.
+             - VIDEO: Represents a video title.
+             - VIDEO_GAME: Represents a video game title.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum:
+              - MOVIE
+              - TV_SERIES
+              - TV_MINI_SERIES
+              - TV_SPECIAL
+              - TV_MOVIE
+              - SHORT
+              - VIDEO
+              - VIDEO_GAME
+          collectionFormat: multi
+        - name: genres
+          description: |-
+            Optional. The genres to filter titles by.
+            If not specified, titles from all genres are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: countryCodes
+          description: |-
+            Optional. The ISO 3166-1 alpha-2 country codes to filter titles by.
+            If not specified, titles from all countries are returned.
+            Example: "US" for United States, "GB" for United Kingdom.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: languageCodes
+          description: |-
+            Optional. The ISO 639-1 or ISO 639-2 language codes to filter titles by.
+            If not specified, titles in all languages are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: nameIds
+          description: Optional. The IDs of names to filter titles by.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: interestIds
+          description: |-
+            Optional. The IDs of interests to filter titles by.
+            If not specified, titles associated with all interests are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: startYear
+          description: Optional. The start year for filtering titles.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: endYear
+          description: Optional. The end year for filtering titles.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: minVoteCount
+          description: |-
+            Optional. The minimum number of votes a title must have to be included.
+            If not specified, titles with any number of votes are included.
+            The value must be between 0 and 1,000,000,000.
+            Default is 0.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: maxVoteCount
+          description: |-
+            Optional. The maximum number of votes a title can have to be included.
+            If not specified, titles with any number of votes are included.
+            The value must be between 0 and 1,000,000,000.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: minAggregateRating
+          description: |-
+            Optional. The minimum rating a title must have to be included.
+            If not specified, titles with any rating are included.
+            The value must be between 0.0 and 10.0.
+          in: query
+          required: false
+          type: number
+          format: float
+        - name: maxAggregateRating
+          description: |-
+            Optional. The maximum rating a title can have to be included.
+            If not specified, titles with any rating are included.
+            The value must be between 0.0 and 10.0.
+          in: query
+          required: false
+          type: number
+          format: float
+        - name: sortBy
+          description: |-
+            Optional. The sorting order for the titles.
+            If not specified, titles are sorted by popularity.
+
+             - SORT_BY_POPULARITY: Sort by popularity.
+            This is used to rank titles based on their popularity, which can be influenced by various factors
+            such as viewership, ratings, and cultural impact.
+             - SORT_BY_RELEASE_DATE: Sort by release date.
+            This is used to rank titles based on their release dates, with newer titles typically appearing
+            before older ones.
+             - SORT_BY_USER_RATING: Sort by user rating.
+            This is used to rank titles based on the average user rating, which reflects the overall audience reception.
+             - SORT_BY_USER_RATING_COUNT: Sort by user rating count.
+            This is used to rank titles based on the number of user ratings they have received,
+            which can indicate the level of engagement or popularity among viewers.
+             - SORT_BY_YEAR: Sort by year.
+            This is used to rank titles based on their release year, with newer titles typically appearing before older ones.
+          in: query
+          required: false
+          type: string
+          enum:
+            - SORT_BY_POPULARITY
+            - SORT_BY_RELEASE_DATE
+            - SORT_BY_USER_RATING
+            - SORT_BY_USER_RATING_COUNT
+            - SORT_BY_YEAR
+        - name: sortOrder
+          description: |-
+            Optional. The sorting order for the titles.
+            If not specified, titles are sorted in ascending order.
+
+             - ASC: Sort in ascending order.
+             - DESC: Sort in descending order.
+          in: query
+          required: false
+          type: string
+          enum:
+            - ASC
+            - DESC
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}:
+    get:
+      summary: Get title by ID
+      description: Retrieve a title's details using its IMDb ID.
+      operationId: IMDbAPIService_GetTitle
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiTitle'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: The IMDb title ID in the format 'tt1234567'.
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /titles:batchGet:
+    get:
+      summary: Batch get titles by IDs
+      description: Retrieve details of multiple titles using their IMDb IDs.
+      operationId: IMDbAPIService_BatchGetTitles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiBatchGetTitlesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleIds
+          description: List of IMDb title IDs. Maximum 5 IDs.
+          in: query
+          required: true
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+      tags:
+        - Title
+  /titles/{titleId}/credits:
+    get:
+      summary: List credits for a title
+      description: Retrieve the credits associated with a specific title.
+      operationId: IMDbAPIService_ListTitleCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: categories
+          description: Optional. The categories of credits to filter by.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of credits to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/releaseDates:
+    get:
+      summary: List release dates for a title
+      description: Retrieve the release dates associated with a specific title.
+      operationId: IMDbAPIService_ListTitleReleaseDates
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleReleaseDatesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of credits to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/akas:
+    get:
+      summary: List AKAs for a title
+      description: Retrieve the alternative titles (AKAs) associated with a specific title.
+      operationId: IMDbAPIService_ListTitleAKAs
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleAKAsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/seasons:
+    get:
+      summary: List seasons for a title
+      description: Retrieve the seasons associated with a specific title.
+      operationId: IMDbAPIService_ListTitleSeasons
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleSeasonsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/episodes:
+    get:
+      summary: List episodes for a title
+      description: Retrieve the episodes associated with a specific title.
+      operationId: IMDbAPIService_ListTitleEpisodes
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleEpisodesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: season
+          description: Optional. The season number to filter episodes by.
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of episodes to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/images:
+    get:
+      summary: List images for a title
+      description: Retrieve the images associated with a specific title.
+      operationId: IMDbAPIService_ListTitleImages
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleImagesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: types
+          description: |-
+            Optional. The types of images to filter by.
+            If not specified, all types are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of images to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/videos:
+    get:
+      summary: List videos for a title
+      description: Retrieve the videos associated with a specific title.
+      operationId: IMDbAPIService_ListTitleVideos
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleVideosResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: types
+          description: |-
+            Optional. The types of videos to filter by.
+            If not specified, all types are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of videos to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/awardNominations:
+    get:
+      summary: List award nominations for a title
+      description: Retrieve the award nominations associated with a specific title.
+      operationId: IMDbAPIService_ListTitleAwardNominations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleAwardNominationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of award nominations to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/parentsGuide:
+    get:
+      summary: List parents guide for a title
+      description: Retrieve the parents guide associated with a specific title.
+      operationId: IMDbAPIService_ListTitleParentsGuide
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleParentsGuideResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/certificates:
+    get:
+      summary: List certificates for a title
+      description: Retrieve the certificates associated with a specific title.
+      operationId: IMDbAPIService_ListTitleCertificates
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleCertificatesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/companyCredits:
+    get:
+      summary: List company credits for a title
+      description: Retrieve the company credits associated with a specific title.
+      operationId: IMDbAPIService_ListTitleCompanyCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListTitleCompanyCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+        - name: categories
+          description: Optional. The categories of company credits to filter by.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of company credits to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Title
+  /titles/{titleId}/boxOffice:
+    get:
+      summary: Get box office information for a title
+      description: Retrieve the box office information associated with a specific title.
+      operationId: IMDbAPIService_GetTitleBoxOffice
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiBoxOffice'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: titleId
+          description: Required. IMDb title ID in the format "tt1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Title
+  /search/titles:
+    get:
+      summary: Search titles by query
+      description: Search for titles using a query string.
+      operationId: IMDbAPIService_SearchTitles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiSearchTitlesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: query
+          description: Required. The search query for titles.
+          in: query
+          required: true
+          type: string
+        - name: limit
+          description: |-
+            Optional. Limit the number of results returned.
+            Maximum is 50.
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - Title
+  /names/{nameId}:
+    get:
+      summary: Get name by ID
+      description: Retrieve a name's details using its IMDb ID.
+      operationId: IMDbAPIService_GetName
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiName'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameId
+          description: Required. IMDB name ID in the format "nm1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Name
+  /names/{nameId}/images:
+    get:
+      summary: List images for a name
+      description: Retrieve the images associated with a specific name.
+      operationId: IMDbAPIService_ListNameImages
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListNameImagesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameId
+          description: Required. IMDB name ID in the format "nm1234567".
+          in: path
+          required: true
+          type: string
+        - name: types
+          description: |-
+            Optional. The types of images to filter by.
+            If not specified, all types are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of images to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Name
+  /names/{nameId}/filmography:
+    get:
+      summary: List filmography for a name
+      description: Retrieve the filmography associated with a specific name.
+      operationId: IMDbAPIService_ListNameFilmography
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListNameFilmographyResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameId
+          description: Required. IMDB name ID in the format "nm1234567".
+          in: path
+          required: true
+          type: string
+        - name: categories
+          description: |-
+            Optional. The categories of credits to filter by.
+            If not specified, all categories are returned.
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of credits to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Name
+  /names/{nameId}/relationships:
+    get:
+      summary: List relationships for a name
+      description: Retrieve the relationships associated with a specific name.
+      operationId: IMDbAPIService_ListNameRelationships
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListNameRelationshipsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameId
+          description: Required. IMDB name ID in the format "nm1234567".
+          in: path
+          required: true
+          type: string
+      tags:
+        - Name
+  /names/{nameId}/trivia:
+    get:
+      summary: List trivia for a name
+      description: Retrieve the trivia associated with a specific name.
+      operationId: IMDbAPIService_ListNameTrivia
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListNameTriviaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameId
+          description: Required. IMDB name ID in the format "nm1234567".
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          description: |-
+            Optional. The maximum number of trivia entries to return per page.
+            If not specified, a default value will be used.
+
+            The value must be between 1 and 50. Default is 20.
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Name
+  /names:batchGet:
+    get:
+      summary: Batch get names by IDs
+      description: Retrieve details of multiple names using their IMDb IDs.
+      operationId: IMDbAPIService_BatchGetNames
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiBatchGetNamesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: nameIds
+          description: |-
+            Required. List of IMDb name IDs in the format "nm1234567".
+            The maximum number of IDs is 5.
+          in: query
+          required: true
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+      tags:
+        - Name
+  /chart/starmeter:
+    get:
+      summary: List star meter rankings
+      description: Retrieve the star meter rankings for names.
+      operationId: IMDbAPIService_ListStarMeters
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListStarMetersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageToken
+          description: Optional. Token for pagination, if applicable.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Name
+  /interests:
+    get:
+      summary: List interest categories
+      description: Retrieve all interest categories available in the IMDb API.
+      operationId: IMDbAPIService_ListInterestCategories
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiListListInterestCategoriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - Interest
+  /interests/{interestId}:
+    get:
+      summary: Get interest by ID
+      description: Retrieve details of a specific interest using its ID.
+      operationId: IMDbAPIService_GetInterest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/imdbapiInterest'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: interestId
+          description: Required. The ID of the interest to retrieve.
+          in: path
+          required: true
+          type: string
+      tags:
+        - Interest
+definitions:
+  imdbapiAKA:
+    type: object
+    properties:
+      text:
+        type: string
+        description: The display text of the title in the specified language and country.
+      country:
+        $ref: '#/definitions/imdbapiCountry'
+        description: The country where this title is used, represented by its ISO 3166-1 alpha-2 code.
+      language:
+        $ref: '#/definitions/imdbapiLanguage'
+        description: The language of the title, represented by its ISO 639-3 code.
+      attributes:
+        type: array
+        items:
+          type: string
+        description: |-
+          Additional attributes related to the title,
+          such as "original title", "working title", or "alternative title".
+    description: |-
+      The AKA (Also Known As) message represents alternative titles
+      for a movie or TV show in different languages and countries.
+  imdbapiAwardNomination:
+    type: object
+    properties:
+      titles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiTitle'
+        description: The titles associated with the award nomination.
+      nominees:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: The nominees associated with the award nomination.
+      event:
+        $ref: '#/definitions/imdbapiEvent'
+        description: The event associated with the award nomination.
+      year:
+        type: integer
+        format: int32
+        description: The year of the award nomination.
+      text:
+        type: string
+        description: The text description of the award nomination.
+      category:
+        type: string
+        description: The category of the award nomination.
+      isWinner:
+        type: boolean
+        description: Whether the nomination is a winner.
+      winnerRank:
+        type: integer
+        format: int32
+        description: The rank of the winner in the nomination.
+    description: |-
+      AwardNomination represents a nomination for an award.
+
+      The unique identifier for the award nomination.
+        string id = 1  [(google.api.field_visibility).restriction = "INTERNAL"];
+  imdbapiAwardNominationStats:
+    type: object
+    properties:
+      nominationCount:
+        type: integer
+        format: int32
+      winCount:
+        type: integer
+        format: int32
+  imdbapiBatchGetNamesResponse:
+    type: object
+    properties:
+      names:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: List of names retrieved by their IMDb IDs.
+    description: Response message for batch getting names by their IDs.
+  imdbapiBatchGetTitlesResponse:
+    type: object
+    properties:
+      titles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiTitle'
+        description: List of titles retrieved by their IMDb IDs.
+  imdbapiBoxOffice:
+    type: object
+    properties:
+      domesticGross:
+        $ref: '#/definitions/imdbapiMoney'
+        description: The domestic box office gross for the movie.
+      worldwideGross:
+        $ref: '#/definitions/imdbapiMoney'
+        description: The total worldwide box office gross for the movie.
+      openingWeekendGross:
+        $ref: '#/definitions/imdbapiOpeningWeekendGross'
+        description: The opening weekend box office gross for the movie.
+      productionBudget:
+        $ref: '#/definitions/imdbapiMoney'
+        description: The production budget for the movie.
+  imdbapiCertificate:
+    type: object
+    properties:
+      rating:
+        type: string
+        description: The rating of the certificate, such as "PG-13", "R", etc.
+      country:
+        $ref: '#/definitions/imdbapiCountry'
+        description: The country where this certificate is issued.
+      attributes:
+        type: array
+        items:
+          type: string
+        title: Additional attributes related to the certificate,
+    description: The Certificate message represents a content rating certificate for a title.
+  imdbapiCompany:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the company.
+      name:
+        type: string
+        description: Name of the company.
+  imdbapiCompanyCredit:
+    type: object
+    properties:
+      company:
+        $ref: '#/definitions/imdbapiCompany'
+        description: Company associated with the credit.
+      category:
+        type: string
+        description: Category of the company credit, such as production, sales, distribution, etc.
+      countries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCountry'
+        description: Countries where the company is based or operates.
+      yearsInvolved:
+        $ref: '#/definitions/imdbapiYearsInvolved'
+        description: YearsInvolved represents the years a company was involved in a project.
+      attributes:
+        type: array
+        items:
+          type: string
+        title: // Additional attributes related to the company credit
+  imdbapiCountry:
+    type: object
+    properties:
+      code:
+        type: string
+        title: The ISO 3166-1 alpha-2 country code for the title, (e.g. "US" for the United States, "JP" for Japan)
+      name:
+        type: string
+        description: The name of the country in English.
+  imdbapiCredit:
+    type: object
+    properties:
+      title:
+        $ref: '#/definitions/imdbapiTitle'
+        description: The Title which this credit is associated with.
+      name:
+        $ref: '#/definitions/imdbapiName'
+        description: The Name who is credited for this role.
+      category:
+        type: string
+        description: The category of the credit.
+      characters:
+        type: array
+        items:
+          type: string
+        description: The characters played by the actor/actress in the title.
+      episodeCount:
+        type: integer
+        format: int32
+        description: The number of episodes in which the person has appeared.
+    description: The Credit message represents a credit for a person in a title.
+  imdbapiEpisode:
+    type: object
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      primaryImage:
+        $ref: '#/definitions/imdbapiImage'
+      season:
+        type: string
+      episodeNumber:
+        type: integer
+        format: int32
+      runtimeSeconds:
+        type: integer
+        format: int32
+      plot:
+        type: string
+      rating:
+        $ref: '#/definitions/imdbapiRating'
+      releaseDate:
+        $ref: '#/definitions/imdbapiPrecisionDate'
+  imdbapiEvent:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the event.
+      name:
+        type: string
+        description: The name of the event.
+  imdbapiImage:
+    type: object
+    properties:
+      url:
+        type: string
+        description: The URL of the image, which can be used to access the image file.
+      width:
+        type: integer
+        format: int32
+        description: The width of the image in pixels.
+      height:
+        type: integer
+        format: int32
+        description: The height of the image in pixels.
+      type:
+        type: string
+        description: The type of the image, such as "poster", "still_frame", "event", etc.
+    description: The Image message represents an image associated with a person or title in the IMDb database.
+  imdbapiInterest:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the interest.
+      name:
+        type: string
+        description: The name of the interest, e.g., "Action", "Action Epic", "Adult Animation", etc.
+      primaryImage:
+        $ref: '#/definitions/imdbapiImage'
+        description: The primary image of the interest, which can be a poster or cover image.
+      description:
+        type: string
+        description: A brief description of the interest, which can include details about the genre or type.
+      isSubgenre:
+        type: boolean
+        description: Indicates whether the interest is a subgenre of another genre.
+      similarInterests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiInterest'
+        description: A list of similar interests that are related to this interest.
+    description: Interest represents a specific interest in the IMDB API.
+  imdbapiInterestCategory:
+    type: object
+    properties:
+      category:
+        type: string
+        description: Unique identifier for the interest category.
+      interests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiInterest'
+        description: A list of interests that belong to this category.
+    description: InterestCategory represents a category of interests in the IMDB API.
+  imdbapiLanguage:
+    type: object
+    properties:
+      code:
+        type: string
+        title: The ISO 639-3 language code for the title, (e.g. "eng" for English, "jpn" for Japanese)
+      name:
+        type: string
+        description: The name of the language in English.
+    description: |-
+      The AKA (Also Known As) message represents alternative titles
+      for a movie or TV show in different languages and countries.
+  imdbapiListListInterestCategoriesResponse:
+    type: object
+    properties:
+      categories:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiInterestCategory'
+        description: List of available interest categories.
+    description: Response message for listing interest categories.
+  imdbapiListNameFilmographyResponse:
+    type: object
+    properties:
+      credits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCredit'
+        description: List of filmography credits associated with the name.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of filmography credits associated with the name.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing filmography associated with a name.
+  imdbapiListNameImagesResponse:
+    type: object
+    properties:
+      images:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiImage'
+        description: List of images associated with the name.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of images associated with the name.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing images associated with a name.
+  imdbapiListNameRelationshipsResponse:
+    type: object
+    properties:
+      relationships:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiNameRelationship'
+        description: List of relationships associated with the name.
+    description: Response message for listing relationships associated with a name.
+  imdbapiListNameTriviaResponse:
+    type: object
+    properties:
+      triviaEntries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiNameTrivia'
+        description: List of trivia entries associated with the name.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of trivia entries associated with the name.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing trivia associated with a name.
+  imdbapiListStarMetersResponse:
+    type: object
+    properties:
+      names:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: List of names with their star meter rankings.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing star meter rankings.
+  imdbapiListTitleAKAsResponse:
+    type: object
+    properties:
+      akas:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiAKA'
+        description: List of AKAs associated with the title.
+    description: Response message for listing AKAs (Also Known As) associated with a title.
+  imdbapiListTitleAwardNominationsResponse:
+    type: object
+    properties:
+      stats:
+        $ref: '#/definitions/imdbapiAwardNominationStats'
+        description: Statistics about award nominations for the title.
+      awardNominations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiAwardNomination'
+        description: List of award nominations associated with the title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing award nominations associated with a title.
+  imdbapiListTitleCertificatesResponse:
+    type: object
+    properties:
+      certificates:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCertificate'
+        description: List of certificates associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of certificates associated with the title.
+    description: Response message for listing certificates associated with a title.
+  imdbapiListTitleCompanyCreditsResponse:
+    type: object
+    properties:
+      companyCredits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCompanyCredit'
+        description: List of company credits associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of company credits matched for listing.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing company credits associated with a title.
+  imdbapiListTitleCreditsResponse:
+    type: object
+    properties:
+      credits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCredit'
+        description: List of credits associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of credits associated with the title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing credits associated with a title.
+  imdbapiListTitleEpisodesResponse:
+    type: object
+    properties:
+      episodes:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiEpisode'
+        description: List of episodes associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: The total number of episodes that have aired for this title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+  imdbapiListTitleImagesResponse:
+    type: object
+    properties:
+      images:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiImage'
+        description: List of images associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of images associated with the title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+  imdbapiListTitleParentsGuideResponse:
+    type: object
+    properties:
+      parentsGuide:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiParentsGuide'
+        description: List of parents guide entries associated with the title.
+    description: Response message for listing parents guide associated with a title.
+  imdbapiListTitleReleaseDatesResponse:
+    type: object
+    properties:
+      releaseDates:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiReleaseDate'
+        description: List of release dates associated with the title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing release dates associated with a title.
+  imdbapiListTitleSeasonsResponse:
+    type: object
+    properties:
+      seasons:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiSeason'
+        description: List of seasons associated with the title.
+  imdbapiListTitleVideosResponse:
+    type: object
+    properties:
+      videos:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiVideo'
+        description: List of videos associated with the title.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total count of videos associated with the title.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+  imdbapiListTitlesResponse:
+    type: object
+    properties:
+      titles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiTitle'
+        description: List of titles matching the request criteria.
+      totalCount:
+        type: integer
+        format: int32
+        description: Total number of titles matching the request criteria.
+      nextPageToken:
+        type: string
+        description: Token for the next page of results, if applicable.
+    description: Response message for listing titles.
+  imdbapiMetacritic:
+    type: object
+    properties:
+      url:
+        type: string
+        description: Metacritic URL.
+      score:
+        type: integer
+        format: int32
+        description: Metacritic score.
+      reviewCount:
+        type: integer
+        format: int32
+        description: Number of reviews.
+    description: Metacritic information for a movie or TV show.
+  imdbapiMoney:
+    type: object
+    properties:
+      amount:
+        type: string
+        format: int64
+        description: The amount of money in the box office.
+      currency:
+        type: string
+        description: The currency of the money.
+  imdbapiName:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the name in the IMDb database.
+      displayName:
+        type: string
+        description: The display name of the person, typically their full name.
+      alternativeNames:
+        type: array
+        items:
+          type: string
+        description: |-
+          Alternative names for the person, which may include stage names,
+          nicknames, or other variations.
+      primaryImage:
+        $ref: '#/definitions/imdbapiImage'
+        description: The primary image associated with the person, such as a profile picture.
+      primaryProfessions:
+        type: array
+        items:
+          type: string
+        description: |-
+          A list of primary professions associated with the person,
+          such as "Actor", "Director", "Producer", etc.
+      biography:
+        type: string
+        description: |-
+          A brief biography or description of the person, which may include
+          their career highlights, achievements, and other relevant information.
+      heightCm:
+        type: integer
+        format: int32
+        description: The height of the person in centimeters.
+      birthName:
+        type: string
+        description: The birth name of the person, which may differ from their display name.
+      birthDate:
+        $ref: '#/definitions/imdbapiPrecisionDate'
+        description: The birth date of the person, represented as a Date message.
+      birthLocation:
+        type: string
+        description: The birth location of the person, which may include the city and country of birth.
+      deathDate:
+        $ref: '#/definitions/imdbapiPrecisionDate'
+        description: |-
+          The death date of the person, represented as a Date message.
+          This field may be empty if the person is still alive.
+      deathLocation:
+        type: string
+        description: The death location of the person, which may include the city and country of death.
+      deathReason:
+        type: string
+        description: The reason for the person's death, if applicable.
+      meterRanking:
+        $ref: '#/definitions/imdbapiNameMeterRanking'
+        description: |-
+          The IMDb popularity meter ranking for the person, which includes
+          their current rank, change direction, and difference from the previous measurement.
+          This field is optional and may not be present for all names.
+    description: |-
+      The Name message represents a person in the IMDb database,
+      such as an actor, director, or producer.
+  imdbapiNameMeterRanking:
+    type: object
+    properties:
+      currentRank:
+        type: integer
+        format: int32
+        description: The current rank of the person in the IMDb popularity meter.
+      changeDirection:
+        type: string
+        description: The direction of the change in rank, which can be "UP", "DOWN", or "none".
+      difference:
+        type: integer
+        format: int32
+        description: |-
+          The difference in rank compared to the previous measurement.
+          Positive for an increase, negative for a decrease, and zero for no change.
+    description: |-
+      The NameMeterRanking message represents the IMDb popularity meter ranking
+      for a person, including their current rank, change direction, and difference
+      from the previous measurement.
+      This ranking is used to indicate the popularity of the person over time.
+  imdbapiNameRelationship:
+    type: object
+    properties:
+      name:
+        $ref: '#/definitions/imdbapiName'
+        description: The related name in the relationship.
+      relationType:
+        type: string
+        description: The type of relationship, such as "spouse", "parent", "child", etc.
+      attributes:
+        type: array
+        items:
+          type: string
+        description: Additional attributes associated with the relationship.
+    description: |-
+      The NameRelationship message represents a relationship between two names
+      in the IMDb database, such as family members, spouses, parents, children, etc.
+      Each relationship includes the related name, the type of relationship,
+      and any additional attributes associated with the relationship.
+  imdbapiNameTrivia:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the trivia.
+      text:
+        type: string
+        description: The trivia body text.
+      interestCount:
+        type: integer
+        format: int32
+        description: The number of users who have expressed interest in this trivia.
+      voteCount:
+        type: integer
+        format: int32
+        description: The number of votes this trivia has received.
+    description: NameTrivia represents a trivia fact about a person (name).
+  imdbapiOpeningWeekendGross:
+    type: object
+    properties:
+      gross:
+        $ref: '#/definitions/imdbapiMoney'
+        description: The amount of money made in the opening weekend.
+      weekendEndDate:
+        $ref: '#/definitions/imdbapiPrecisionDate'
+        description: The date of the opening weekend.
+  imdbapiParentsGuide:
+    type: object
+    properties:
+      category:
+        $ref: '#/definitions/imdbapiParentsGuideCategory'
+      severityBreakdowns:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiParentsGuideSeverity'
+      reviews:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiParentsGuideReview'
+  imdbapiParentsGuideCategory:
+    type: string
+    enum:
+      - SEXUAL_CONTENT
+      - VIOLENCE
+      - PROFANITY
+      - ALCOHOL_DRUGS
+      - FRIGHTENING_INTENSE_SCENES
+    description: |-
+      ParentsGuideCategory defines the categories for the Parents Guide.
+
+       - SEXUAL_CONTENT: Sex & Nudity
+       - VIOLENCE: Violence & Gore
+       - PROFANITY: Profanity
+       - ALCOHOL_DRUGS: Alcohol, Drugs & Smoking
+       - FRIGHTENING_INTENSE_SCENES: Frightening & Intense Scenes
+  imdbapiParentsGuideReview:
+    type: object
+    properties:
+      text:
+        type: string
+      isSpoiler:
+        type: boolean
+  imdbapiParentsGuideSeverity:
+    type: object
+    properties:
+      severityLevel:
+        type: string
+      voteCount:
+        type: integer
+        format: int32
+  imdbapiPrecisionDate:
+    type: object
+    properties:
+      year:
+        type: integer
+        format: int32
+        description: The year of the date, represented as an integer.
+      month:
+        type: integer
+        format: int32
+        description: The month of the date, represented as an integer.
+      day:
+        type: integer
+        format: int32
+        description: The day of the date, represented as an integer.
+    description: |-
+      The PrecisionDate message represents a specific date,
+      typically used for birth dates, death dates, or release dates.
+  imdbapiRating:
+    type: object
+    properties:
+      aggregateRating:
+        type: number
+        format: float
+        description: |-
+          The aggregate_rating field contains the average rating of the title,
+          typically on a scale from 1 to 10.
+      voteCount:
+        type: integer
+        format: int32
+        description: The votes_count field contains the total number of votes cast for the title.
+    description: The Rating message represents the aggregate rating and votes count for a title.
+  imdbapiReleaseDate:
+    type: object
+    properties:
+      country:
+        $ref: '#/definitions/imdbapiCountry'
+        title: The country where the title was released,
+      releaseDate:
+        $ref: '#/definitions/imdbapiPrecisionDate'
+        description: The date when the title was released in the specified country.
+      attributes:
+        type: array
+        items:
+          type: string
+        description: |-
+          The attributes field contains additional attributes related to the release date.
+
+          These attributes can include information such as
+          the format of the release (e.g., "Theatrical", "DVD", "Blu-ray").
+    description: The ReleaseDate message represents the release date of a title in a specific country.
+  imdbapiSearchTitlesResponse:
+    type: object
+    properties:
+      titles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiTitle'
+        description: List of titles matching the search query.
+    description: Response message for searching titles.
+  imdbapiSeason:
+    type: object
+    properties:
+      season:
+        type: string
+      episodeCount:
+        type: integer
+        format: int32
+  imdbapiSortOrder:
+    type: string
+    enum:
+      - ASC
+      - DESC
+    description: |2-
+       - ASC: Sort in ascending order.
+       - DESC: Sort in descending order.
+  imdbapiTitle:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the title.
+      type:
+        type: string
+        description: The type of the title, such as "movie", "tvSeries", "tvEpisode", etc.
+      isAdult:
+        type: boolean
+        description: The is_adult field indicates whether the title is intended for adult audiences.
+      primaryTitle:
+        type: string
+        description: The primary title of the title, which is typically the most recognized name.
+      originalTitle:
+        type: string
+        description: The original title of the title, normally which is the title as it was originally released.
+      primaryImage:
+        $ref: '#/definitions/imdbapiImage'
+        description: The primary image associated with the title, such as a poster.
+      startYear:
+        type: integer
+        format: int32
+        description: The start_year field is used for titles that have a defined start, such as movies or TV series.
+      endYear:
+        type: integer
+        format: int32
+        description: The end_year field is used for titles that have a defined end, such as TV series.
+      runtimeSeconds:
+        type: integer
+        format: int32
+        description: The runtime_seconds field contains the total runtime of the title in minutes.
+      genres:
+        type: array
+        items:
+          type: string
+        description: The genres field contains a list of genres associated with the title.
+      rating:
+        $ref: '#/definitions/imdbapiRating'
+        description: The rating field contains the aggregate rating and the number of votes for the title.
+      metacritic:
+        $ref: '#/definitions/imdbapiMetacritic'
+        description: The metacritic information for the title, such as score and reviews.
+      plot:
+        type: string
+        description: The plot field contains a brief summary or description of the title's storyline.
+      directors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: The list of directors associated with the title, which can include multiple directors.
+      writers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: The list of writers associated with the title, which can include multiple writers.
+      stars:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiName'
+        description: The list of stars associated with the title, which can include multiple actors or actresses.
+      originCountries:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiCountry'
+        description: The list of countries where the title was produced or is associated with.
+      spokenLanguages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiLanguage'
+        description: The list of languages spoken in the title, which can include multiple languages.
+      interests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/imdbapiInterest'
+        description: The list of interests associated with the title.
+  imdbapiTitleSortBy:
+    type: string
+    enum:
+      - SORT_BY_POPULARITY
+      - SORT_BY_RELEASE_DATE
+      - SORT_BY_USER_RATING
+      - SORT_BY_USER_RATING_COUNT
+      - SORT_BY_YEAR
+    description: |2-
+       - SORT_BY_POPULARITY: Sort by popularity.
+      This is used to rank titles based on their popularity, which can be influenced by various factors
+      such as viewership, ratings, and cultural impact.
+       - SORT_BY_RELEASE_DATE: Sort by release date.
+      This is used to rank titles based on their release dates, with newer titles typically appearing
+      before older ones.
+       - SORT_BY_USER_RATING: Sort by user rating.
+      This is used to rank titles based on the average user rating, which reflects the overall audience reception.
+       - SORT_BY_USER_RATING_COUNT: Sort by user rating count.
+      This is used to rank titles based on the number of user ratings they have received,
+      which can indicate the level of engagement or popularity among viewers.
+       - SORT_BY_YEAR: Sort by year.
+      This is used to rank titles based on their release year, with newer titles typically appearing before older ones.
+  imdbapiTitleType:
+    type: string
+    enum:
+      - MOVIE
+      - TV_SERIES
+      - TV_MINI_SERIES
+      - TV_SPECIAL
+      - TV_MOVIE
+      - SHORT
+      - VIDEO
+      - VIDEO_GAME
+    description: |-
+      TitleType defines the type of title in the IMDb API.
+
+       - MOVIE: Represents a movie title.
+       - TV_SERIES: Represents a TV series title.
+       - TV_MINI_SERIES: Represents a TV mini-series title.
+       - TV_SPECIAL: Represents a TV special title.
+       - TV_MOVIE: Represents a TV movie title.
+       - SHORT: Represents a short title.
+       - VIDEO: Represents a video title.
+       - VIDEO_GAME: Represents a video game title.
+  imdbapiVideo:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the video.
+      type:
+        type: string
+        description: The type of the video.
+      name:
+        type: string
+        description: The name of the video.
+      primaryImage:
+        $ref: '#/definitions/imdbapiImage'
+        description: The primary image of the video.
+      description:
+        type: string
+        description: A description of the video.
+      width:
+        type: integer
+        format: int32
+        description: The width of the video in pixels.
+      height:
+        type: integer
+        format: int32
+        description: The height of the video in pixels.
+      runtimeSeconds:
+        type: integer
+        format: int32
+        description: The runtime of the video in seconds.
+    description: Video is a message that represents a video associated with a title.
+  imdbapiYearsInvolved:
+    type: object
+    properties:
+      startYear:
+        type: integer
+        format: int32
+        title: Start year of involvement
+      endYear:
+        type: integer
+        format: int32
+        title: End year of involvement
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: { }
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
