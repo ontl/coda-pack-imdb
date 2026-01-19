@@ -15,6 +15,7 @@ pack.addNetworkDomain("imdbapi.dev");
 pack.addNetworkDomain("themoviedb.org");
 pack.setSystemAuthentication({
   type: coda.AuthenticationType.Custom,
+  networkDomain: "themoviedb.org",
   params: [
     { name: "tmdbApiKey", description: "API Key from themoviedb.org" },
   ],
