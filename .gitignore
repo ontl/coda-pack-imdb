@@ -4,3 +4,4 @@ node_modules
 .coda-credentials.json
 *.DS_Store
 .DS_Store
+_upload_build
